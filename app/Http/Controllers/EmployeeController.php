@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Models\Empleado;
 use App\Models\Taller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -52,7 +53,11 @@ class EmployeeController extends Controller
 
     public function destroy(Empleado $employee)
     {
-        $employee->delete();
+        DB::transaction(function () use ($employee) {
+            $employee->evaluaciones()->delete();
+            $employee->reportesQuincenales()->delete();
+            $employee->delete();
+        });
 
         return redirect()->route('employees')->with('success', 'Employee deleted.');
     }

@@ -203,20 +203,85 @@ class ReporteController extends Controller
     public function exportExcel(Request $request)
     {
         [$empleados, $global, $periodo, $tallerNombre] = $this->buildReportData($request);
+        [$comentarios, $motivosFreq] = $this->buildFeedbackData($request, $periodo);
+
         $filename = 'reporte-didasa-' . now()->format('Y-m-d') . '.xlsx';
-        return Excel::download(new ReporteExport($empleados->toArray(), $global ? $global->toArray() : [], $periodo, $tallerNombre), $filename);
+        return Excel::download(new ReporteExport(
+            $empleados->toArray(),
+            $global ? $global->toArray() : [],
+            $periodo,
+            $tallerNombre,
+            $comentarios,
+            $motivosFreq,
+        ), $filename);
     }
 
     public function exportPdf(Request $request)
     {
         [$empleados, $global, $periodo, $tallerNombre] = $this->buildReportData($request);
+        [$comentarios, $motivosFreq] = $this->buildFeedbackData($request, $periodo);
         $filename = 'reporte-didasa-' . now()->format('Y-m-d') . '.pdf';
         return Pdf::loadView('exports.reporte_pdf', [
             'empleados'    => $empleados,
             'global'       => $global ? $global->toArray() : [],
             'periodo'      => $periodo,
             'tallerNombre' => $tallerNombre,
+            'comentarios'  => $comentarios,
+            'motivosFreq'  => $motivosFreq,
         ])->setPaper('a4', 'landscape')->download($filename);
+    }
+
+    private function buildFeedbackData(Request $request, array $periodo): array
+    {
+        $workshopId = $request->filled('taller') ? (int) $request->taller : null;
+        $inicio = Carbon::parse($periodo['inicio'])->startOfDay();
+        $fin = Carbon::parse($periodo['fin'])->endOfDay();
+
+        $comentariosQ = Evaluacion::whereBetween('created_at', [$inicio, $fin])
+            ->where('rating', 'poor')
+            ->whereNotNull('comment')
+            ->where('comment', '!=', '');
+
+        if ($workshopId) {
+            $empIds = Empleado::where('workshop_id', $workshopId)->pluck('id');
+            if ($empIds->isEmpty()) {
+                return [[], []];
+            }
+            $comentariosQ->whereIn('employee_id', $empIds);
+        }
+
+        $comentariosRaw = $comentariosQ->orderByDesc('created_at')
+            ->limit(300)
+            ->with('empleado:id,first_name,last_name,position')
+            ->get();
+
+        $comentarios = $comentariosRaw->map(fn ($e) => [
+            'empleado' => optional($e->empleado)->full_name ?? '—',
+            'cargo'    => optional($e->empleado)->position ?? '—',
+            'comment'  => $e->comment,
+            'fecha'    => $e->created_at->format('d/m/Y H:i'),
+        ])->values()->toArray();
+
+        $motivosFreq = [];
+        foreach ($comentariosRaw as $c) {
+            foreach (explode(', ', $c->comment ?? '') as $part) {
+                $part = trim($part);
+                if (!$part) {
+                    continue;
+                }
+                $key = str_starts_with($part, 'Otro:') ? 'Otro' : $part;
+                $motivosFreq[$key] = ($motivosFreq[$key] ?? 0) + 1;
+            }
+        }
+
+        arsort($motivosFreq);
+        $motivosFreq = array_values(array_map(
+            fn ($label, $count) => ['label' => $label, 'count' => $count],
+            array_keys($motivosFreq),
+            $motivosFreq
+        ));
+
+        return [$comentarios, $motivosFreq];
     }
 
     private function buildReportData(Request $request): array

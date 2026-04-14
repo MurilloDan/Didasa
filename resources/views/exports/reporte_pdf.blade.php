@@ -100,6 +100,18 @@
     .bar-yellow { background: #fbbf24; }
     .bar-red    { background: #ef4444; }
 
+    /* comments section */
+    .motivo-row { margin-bottom: 5px; }
+    .motivo-label { display: inline-block; width: 170px; font-size: 8px; color: #374151; }
+    .motivo-track { display: inline-block; width: 360px; height: 8px; background: #f3f4f6; border-radius: 4px; vertical-align: middle; overflow: hidden; }
+    .motivo-fill { display: inline-block; height: 8px; background: #c80000; border-radius: 4px; }
+    .motivo-count { display: inline-block; width: 26px; text-align: right; font-size: 8px; color: #6b7280; }
+
+    table.comments { width: 100%; border-collapse: collapse; font-size: 8px; margin-top: 6px; }
+    table.comments th { background: #1a1a1a; color: #fff; padding: 4px 5px; text-align: left; border: 1px solid #333; }
+    table.comments td { padding: 4px 5px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+    table.comments tr:nth-child(even) td { background: #fef2f2; }
+
     .footer { text-align: right; font-size: 7.5px; color: #9ca3af; margin-top: 12px; border-top: 1px solid #e5e7eb; padding-top: 4px; }
 </style>
 </head>
@@ -115,6 +127,9 @@
     $pctPoor = $total > 0 ? round($poor / $total * 100, 1) : 0;
     $idx     = $total > 0 ? round(($good * 100 + $fair * 50) / $total, 1) : 0;
     $periodoLabel = $periodo['fortnight'] ? 'Quincena ' . $periodo['fortnight'] : 'Período personalizado';
+    $comentarios = $comentarios ?? [];
+    $motivosFreq = $motivosFreq ?? [];
+    $maxMotivo = count($motivosFreq) ? max(array_map(fn ($m) => (int) ($m['count'] ?? 0), $motivosFreq)) : 0;
 @endphp
 
 {{-- Header --}}
@@ -234,150 +249,50 @@
     </tbody>
 </table>
 
-<div class="footer">TECNICENTRO DIDASA &mdash; Documento generado automáticamente &mdash; {{ now()->format('d/m/Y H:i') }}</div>
-</body>
-</html>
+{{-- Comments Summary --}}
+<div class="section-title">Aspectos a Mejorar</div>
 
+@if(count($motivosFreq) > 0)
+    @foreach($motivosFreq as $m)
+        @php
+            $count = (int) ($m['count'] ?? 0);
+            $width = $maxMotivo > 0 ? round(($count / $maxMotivo) * 100, 1) : 0;
+        @endphp
+        <div class="motivo-row">
+            <span class="motivo-label">{{ $m['label'] ?? '—' }}</span>
+            <span class="motivo-track"><span class="motivo-fill" style="width: {{ $width }}%;"></span></span>
+            <span class="motivo-count">{{ $count }}</span>
+        </div>
+    @endforeach
+@else
+    <p style="font-size:8px;color:#6b7280;">Sin aspectos registrados en este período.</p>
+@endif
 
-    .header { background: #c80000; color: #fff; padding: 12px 16px; margin-bottom: 14px; }
-    .header h1 { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
-    .header p { font-size: 10px; opacity: .85; }
-
-    .meta-grid { display: table; width: 100%; margin-bottom: 14px; }
-    .meta-cell { display: table-cell; width: 50%; vertical-align: top; }
-    .meta-cell table { width: 100%; border-collapse: collapse; }
-    .meta-cell td { padding: 4px 6px; font-size: 10px; border-bottom: 1px solid #e5e7eb; }
-    .meta-cell td:first-child { font-weight: bold; color: #6b7280; width: 120px; }
-
-    h2 { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #c80000;
-         letter-spacing: .5px; margin-bottom: 6px; border-bottom: 2px solid #c80000; padding-bottom: 2px; }
-
-    .global-grid { display: table; width: 100%; margin-bottom: 16px; border-collapse: collapse; }
-    .kpi { display: table-cell; text-align: center; padding: 10px; border: 1px solid #e5e7eb;
-           background: #f9fafb; }
-    .kpi .num { font-size: 22px; font-weight: bold; }
-    .kpi .label { font-size: 9px; color: #6b7280; margin-top: 3px; }
-    .kpi.good .num { color: #16a34a; }
-    .kpi.fair .num { color: #d97706; }
-    .kpi.poor .num { color: #c80000; }
-    .kpi.idx  .num { color: #1d4ed8; }
-
-    table.data { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-    table.data th { background: #c80000; color: #fff; padding: 5px 7px; font-size: 9px;
-                    text-align: center; font-weight: bold; }
-    table.data td { padding: 4px 7px; font-size: 9px; border-bottom: 1px solid #e5e7eb; }
-    table.data tr:nth-child(even) td { background: #fef2f2; }
-    table.data td.right { text-align: right; }
-    table.data td.center { text-align: center; }
-
-    .bar-wrap { background: #e5e7eb; border-radius: 3px; height: 8px; width: 60px; display: inline-block; vertical-align: middle; }
-    .bar-fill  { height: 8px; border-radius: 3px; display: inline-block; }
-
-    .footer { text-align: right; font-size: 8px; color: #9ca3af; margin-top: 10px; }
-</style>
-</head>
-<body>
-
-{{-- Header --}}
-<div class="header">
-    <h1>TECNICENTRO DIDASA &mdash; Reporte de Satisfacción</h1>
-    <p>Generado el {{ now()->format('d/m/Y H:i') }}</p>
-</div>
-
-{{-- Meta info --}}
-<div class="meta-grid">
-    <div class="meta-cell">
-        <table>
-            <tr><td>Taller</td><td>{{ $tallerNombre }}</td></tr>
-            <tr><td>Quincena</td><td>{{ $periodo['fortnight'] ? 'Quincena '.$periodo['fortnight'] : 'Período personalizado' }}</td></tr>
-        </table>
-    </div>
-    <div class="meta-cell" style="padding-left:16px;">
-        <table>
-            <tr><td>Desde</td><td>{{ $periodo['inicio'] }}</td></tr>
-            <tr><td>Hasta</td><td>{{ $periodo['fin'] }}</td></tr>
-        </table>
-    </div>
-</div>
-
-{{-- Global KPIs --}}
-<h2>Resumen General</h2>
-@php
-    $total   = $global->total ?? 0;
-    $good    = $global->good  ?? 0;
-    $fair    = $global->fair  ?? 0;
-    $poor    = $global->poor  ?? 0;
-    $pctGood = $total > 0 ? round($good / $total * 100, 1) : 0;
-    $pctFair = $total > 0 ? round($fair / $total * 100, 1) : 0;
-    $pctPoor = $total > 0 ? round($poor / $total * 100, 1) : 0;
-    $idx     = $total > 0 ? round(($good * 100 + $fair * 50) / $total, 1) : 0;
-@endphp
-<table class="global-grid" style="margin-bottom:16px;">
-    <tr>
-        <td class="kpi">
-            <div class="num">{{ $total }}</div>
-            <div class="label">Total evaluaciones</div>
-        </td>
-        <td class="kpi good">
-            <div class="num">{{ $good }}</div>
-            <div class="label">😊 Excelente ({{ $pctGood }}%)</div>
-        </td>
-        <td class="kpi fair">
-            <div class="num">{{ $fair }}</div>
-            <div class="label">😐 Regular ({{ $pctFair }}%)</div>
-        </td>
-        <td class="kpi poor">
-            <div class="num">{{ $poor }}</div>
-            <div class="label">😞 Debe Mejorar ({{ $pctPoor }}%)</div>
-        </td>
-        <td class="kpi idx">
-            <div class="num">{{ $idx }}%</div>
-            <div class="label">Índice de Satisfacción</div>
-        </td>
-    </tr>
-</table>
-
-{{-- Per-employee table --}}
-<h2>Detalle por Empleado</h2>
-<table class="data">
+<div class="section-title">Comentarios Recientes</div>
+<table class="comments">
     <thead>
         <tr>
-            <th>#</th>
-            <th style="text-align:left;">Empleado</th>
-            <th style="text-align:left;">Cargo</th>
-            <th style="text-align:left;">Departamento</th>
-            <th>Total</th>
-            <th>😊 Exc.</th>
-            <th>%</th>
-            <th>😐 Reg.</th>
-            <th>%</th>
-            <th>😞 Mej.</th>
-            <th>%</th>
-            <th>Satisfacción</th>
+            <th style="width:26%;">Empleado</th>
+            <th style="width:52%;">Comentario</th>
+            <th style="width:22%;">Fecha</th>
         </tr>
     </thead>
     <tbody>
-        @forelse($empleados as $i => $emp)
+        @forelse($comentarios as $c)
         <tr>
-            <td class="center">{{ $i + 1 }}</td>
-            <td>{{ $emp['full_name'] }}</td>
-            <td>{{ $emp['position'] ?? '—' }}</td>
-            <td>{{ $emp['department'] ?? '—' }}</td>
-            <td class="center">{{ $emp['total'] }}</td>
-            <td class="center">{{ $emp['good'] }}</td>
-            <td class="center">{{ $emp['pct_good'] }}%</td>
-            <td class="center">{{ $emp['fair'] }}</td>
-            <td class="center">{{ $emp['pct_fair'] }}%</td>
-            <td class="center">{{ $emp['poor'] }}</td>
-            <td class="center">{{ $emp['pct_poor'] }}%</td>
-            <td class="center" style="font-weight:bold;color:#1d4ed8;">{{ $emp['satisfaction_index'] }}%</td>
+            <td>
+                <strong>{{ $c['empleado'] ?? '—' }}</strong><br>
+                <span style="color:#6b7280;">{{ $c['cargo'] ?? '—' }}</span>
+            </td>
+            <td>{{ $c['comment'] ?? '' }}</td>
+            <td style="white-space:nowrap;">{{ $c['fecha'] ?? '' }}</td>
         </tr>
         @empty
-        <tr><td colspan="12" class="center" style="color:#9ca3af;padding:12px;">Sin evaluaciones en este período</td></tr>
+        <tr><td colspan="3" style="color:#9ca3af;">Sin comentarios registrados en este período.</td></tr>
         @endforelse
     </tbody>
 </table>
 
-<div class="footer">TECNICENTRO DIDASA &mdash; Documento generado automáticamente</div>
+<div class="footer">TECNICENTRO DIDASA &mdash; Documento generado automáticamente &mdash; {{ now()->format('d/m/Y H:i') }}</div>
 </body>
 </html>

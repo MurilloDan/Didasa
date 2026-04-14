@@ -11,6 +11,8 @@ class ReporteExport implements WithMultipleSheets
         private array  $global,
         private array  $periodo,
         private string $tallerNombre,
+        private array  $comentarios,
+        private array  $motivosFreq,
     ) {}
 
     public function sheets(): array
@@ -18,6 +20,7 @@ class ReporteExport implements WithMultipleSheets
         return [
             new ReporteResumenSheet($this->global, $this->periodo, $this->tallerNombre),
             new ReporteEmpleadosSheet($this->empleados),
+            new ReporteComentariosSheet($this->comentarios, $this->motivosFreq),
         ];
     }
 }
