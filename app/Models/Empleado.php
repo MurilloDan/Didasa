@@ -11,6 +11,7 @@ class Empleado extends Model
     protected $table = 'employees';
 
     protected $fillable = [
+        'workshop_id',
         'department_id',
         'first_name',
         'last_name',
@@ -33,6 +34,11 @@ class Empleado extends Model
     public function area(): BelongsTo
     {
         return $this->belongsTo(Area::class, 'department_id');
+    }
+
+    public function workshop(): BelongsTo
+    {
+        return $this->belongsTo(Taller::class, 'workshop_id');
     }
 
     public function evaluaciones(): HasMany

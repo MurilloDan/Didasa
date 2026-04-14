@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Taller extends Model
 {
@@ -18,5 +19,10 @@ class Taller extends Model
     public function scopeActivos($query)
     {
         return $query->where('active', true);
+    }
+
+    public function empleados(): HasMany
+    {
+        return $this->hasMany(Empleado::class, 'workshop_id');
     }
 }

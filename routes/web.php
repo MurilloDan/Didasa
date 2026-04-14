@@ -17,6 +17,8 @@ Route::post('/evaluar', [EvaluacionController::class, 'store'])->name('evaluar.s
 // Rutas protegidas por autenticación
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/reportes', [ReporteController::class, 'index'])->name('reportes');
+    Route::get('/reportes/export/excel', [ReporteController::class, 'exportExcel'])->name('reportes.excel');
+    Route::get('/reportes/export/pdf',   [ReporteController::class, 'exportPdf'])->name('reportes.pdf');
 
     // Talleres CRUD
     Route::get('/talleres', [TallerController::class, 'index'])->name('talleres');

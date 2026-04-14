@@ -62,11 +62,11 @@
 
         <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
-            <h2 class="text-2xl font-black text-didasa-black">Staff</h2>
-            <p class="text-sm text-gray-500 mt-0.5">Gestión del personal del taller</p>
+            <h2 class="text-2xl font-black text-didasa-black">Usuarios</h2>
+            <p class="text-sm text-gray-500 mt-0.5">Gestión de cuentas de acceso al sistema</p>
           </div>
           <button @click="abrirModal()" class="flex items-center gap-2 bg-didasa-red hover:bg-didasa-redhov text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-            <span class="text-lg leading-none">+</span> Nuevo staff
+            <span class="text-lg leading-none">+</span> Nuevo usuario
           </button>
         </div>
 
@@ -79,40 +79,31 @@
                 <tr>
                   <th class="px-6 py-3 text-left">ID</th>
                   <th class="px-6 py-3 text-left">Nombre</th>
-                  <th class="px-6 py-3 text-left">Rol</th>
-                  <th class="px-4 py-3 text-center">Iniciales</th>
-                  <th class="px-4 py-3 text-center">Color</th>
-                  <th class="px-6 py-3 text-center">Estado</th>
+                  <th class="px-6 py-3 text-left">Email</th>
+                  <th class="px-6 py-3 text-left">Creado</th>
                   <th class="px-6 py-3 text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-50">
-                <tr v-if="staff.length === 0">
-                  <td colspan="7" class="py-16 text-center text-gray-400">No hay staff registrado aún.</td>
+                <tr v-if="users.length === 0">
+                  <td colspan="5" class="py-16 text-center text-gray-400">No hay usuarios registrados.</td>
                 </tr>
-                <tr v-for="member in staff" :key="member.id" class="hover:bg-gray-50 transition-colors">
-                  <td class="px-6 py-4 font-mono text-gray-400 text-xs">{{ member.id }}</td>
+                <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50 transition-colors">
+                  <td class="px-6 py-4 font-mono text-gray-400 text-xs">{{ user.id }}</td>
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
-                      <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-black flex-shrink-0" :style="{ backgroundColor: member.avatar_bg }">
-                        {{ member.initials }}
-                      </div>
-                      <span class="font-medium text-gray-800">{{ member.name }}</span>
+                      <div class="w-9 h-9 rounded-full bg-didasa-red flex items-center justify-center text-white text-xs font-black flex-shrink-0">{{ initials(user.name) }}</div>
+                      <span class="font-medium text-gray-800">{{ user.name }}</span>
+                      <span v-if="user.id === currentUserId" class="text-xs bg-didasa-gold/20 text-didasa-gold font-semibold px-2 py-0.5 rounded-full">Tú</span>
                     </div>
                   </td>
-                  <td class="px-6 py-4 text-gray-500">{{ member.role }}</td>
-                  <td class="px-4 py-4 text-center"><span class="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{{ member.initials }}</span></td>
-                  <td class="px-4 py-4 text-center"><div class="w-6 h-6 rounded-full mx-auto border border-gray-200" :style="{ backgroundColor: member.avatar_bg }"></div></td>
-                  <td class="px-6 py-4 text-center">
-                    <span :class="['text-xs font-semibold px-2.5 py-1 rounded-full', member.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500']">
-                      {{ member.active ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </td>
+                  <td class="px-6 py-4 text-gray-500">{{ user.email }}</td>
+                  <td class="px-6 py-4 text-gray-400 text-xs">{{ formatDate(user.created_at) }}</td>
                   <td class="px-6 py-4 text-center">
                     <div class="flex items-center justify-center gap-2">
-                      <button @click="abrirModal(member)" class="text-xs text-didasa-red hover:underline font-medium">Editar</button>
+                      <button @click="abrirModal(user)" class="text-xs text-didasa-red hover:underline font-medium">Editar</button>
                       <span class="text-gray-300">|</span>
-                      <button @click="eliminar(member)" class="text-xs text-gray-400 hover:text-red-600 hover:underline font-medium">Eliminar</button>
+                      <button @click="eliminar(user)" :disabled="user.id === currentUserId" :class="['text-xs font-medium', user.id === currentUserId ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400 hover:text-red-600 hover:underline']">Eliminar</button>
                     </div>
                   </td>
                 </tr>
@@ -121,26 +112,24 @@
           </div>
           <!-- Mobile -->
           <div class="md:hidden divide-y divide-gray-100">
-            <div v-if="staff.length === 0" class="py-16 text-center text-gray-400 text-sm">No hay staff registrado aún.</div>
-            <div v-for="member in staff" :key="member.id" class="flex items-center gap-3 px-4 py-3">
-              <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0" :style="{ backgroundColor: member.avatar_bg }">
-                {{ member.initials }}
-              </div>
+            <div v-if="users.length === 0" class="py-16 text-center text-gray-400 text-sm">No hay usuarios registrados.</div>
+            <div v-for="user in users" :key="user.id" class="flex items-center gap-3 px-4 py-3">
+              <div class="w-10 h-10 rounded-full bg-didasa-red flex items-center justify-center text-white text-sm font-black flex-shrink-0">{{ initials(user.name) }}</div>
               <div class="flex-1 min-w-0">
-                <p class="font-semibold text-gray-800 truncate">{{ member.name }}</p>
-                <p class="text-xs text-gray-400">{{ member.role }}</p>
+                <div class="flex items-center gap-1.5">
+                  <p class="font-semibold text-gray-800 truncate">{{ user.name }}</p>
+                  <span v-if="user.id === currentUserId" class="text-xs bg-didasa-gold/20 text-didasa-gold font-semibold px-1.5 py-0.5 rounded-full">Tú</span>
+                </div>
+                <p class="text-xs text-gray-400 truncate">{{ user.email }}</p>
               </div>
-              <span :class="['text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0', member.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500']">
-                {{ member.active ? 'Activo' : 'Inactivo' }}
-              </span>
               <div class="flex flex-col items-end gap-1 flex-shrink-0">
-                <button @click="abrirModal(member)" class="text-xs text-didasa-red font-semibold">Editar</button>
-                <button @click="eliminar(member)" class="text-xs text-gray-400">Eliminar</button>
+                <button @click="abrirModal(user)" class="text-xs text-didasa-red font-semibold">Editar</button>
+                <button @click="eliminar(user)" :disabled="user.id === currentUserId" :class="['text-xs', user.id === currentUserId ? 'text-gray-300 cursor-not-allowed' : 'text-gray-400']">Eliminar</button>
               </div>
             </div>
           </div>
         </div>
-        <p class="text-xs text-gray-400 mt-3">{{ staff.length }} miembro(s)</p>
+        <p class="text-xs text-gray-400 mt-3">{{ users.length }} usuario(s)</p>
 
       </main>
     </div>
@@ -149,35 +138,32 @@
     <div v-if="modal.open" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 class="font-bold text-didasa-black">{{ modal.editando ? 'Editar Staff' : 'Nuevo Staff' }}</h3>
+          <h3 class="font-bold text-didasa-black">{{ modal.editando ? 'Editar Usuario' : 'Nuevo Usuario' }}</h3>
           <button @click="cerrarModal" class="text-gray-400 hover:text-gray-700 text-xl">&times;</button>
         </div>
         <form @submit.prevent="guardar" class="px-6 py-5 space-y-4">
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Nombre completo</label>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Nombre</label>
             <input v-model="form.name" type="text" placeholder="ej. Juan Pérez" required
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-didasa-red" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Rol</label>
-            <input v-model="form.role" type="text" placeholder="ej. Mecánico" required
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Email</label>
+            <input v-model="form.email" type="email" placeholder="correo@ejemplo.com" required
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-didasa-red" />
           </div>
-          <div class="flex gap-4">
-            <div class="flex-1">
-              <label class="block text-xs font-semibold text-gray-600 mb-1">Iniciales</label>
-              <input v-model="form.initials" type="text" maxlength="5" placeholder="JP" required
-                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-didasa-red uppercase" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-gray-600 mb-1">Color del avatar</label>
-              <input v-model="form.avatar_bg" type="color"
-                class="h-10 w-16 rounded-lg border border-gray-200 cursor-pointer px-1 py-1" />
-            </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">
+              Contraseña
+              <span v-if="modal.editando" class="font-normal text-gray-400">(dejar en blanco para no cambiar)</span>
+            </label>
+            <input v-model="form.password" type="password" :required="!modal.editando" :placeholder="modal.editando ? '••••••••' : 'Mínimo 8 caracteres'"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-didasa-red" />
           </div>
-          <div v-if="modal.editando" class="flex items-center gap-2">
-            <input id="active" v-model="form.active" type="checkbox" class="accent-didasa-red" />
-            <label for="active" class="text-sm text-gray-600">Activo</label>
+          <div v-if="form.errors.email || form.errors.password || form.errors.name" class="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 space-y-1">
+            <p v-if="form.errors.name">{{ form.errors.name }}</p>
+            <p v-if="form.errors.email">{{ form.errors.email }}</p>
+            <p v-if="form.errors.password">{{ form.errors.password }}</p>
           </div>
           <div class="flex justify-end gap-3 pt-2">
             <button type="button" @click="cerrarModal" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancelar</button>
@@ -218,23 +204,24 @@ import { useForm, router, usePage } from '@inertiajs/vue3'
 const page = usePage()
 function cerrarSesion() { router.post('/logout') }
 
-const props = defineProps({ staff: Array })
+const props = defineProps({ users: Array })
 
-const sidebarOpen = ref(window.innerWidth >= 768)
+const currentUserId = usePage().props.auth.user.id
+const sidebarOpen   = ref(window.innerWidth >= 768)
 
 const menuItems = [
   { label: 'Talleres',   icon: '🔧', href: '/talleres',  active: false },
   { label: 'Empleados',  icon: '👷', href: '/employees', active: false },
-  { label: 'Staff',      icon: '🧰', href: '/staff',     active: true  },
+  { label: 'Staff',      icon: '🧰', href: '/staff',     active: false },
   { label: 'Clientes',   icon: '🧑‍💼', href: '/clients',  active: false },
   { label: 'Evaluación', icon: '⭐', href: '#',          active: false },
   { label: 'Reportes',   icon: '📊', href: '/reportes',  active: false },
-  { label: 'Usuarios',   icon: '👤', href: '/users',     active: false },
+  { label: 'Usuarios',   icon: '👤', href: '/users',     active: true  },
 ]
 
 const modal         = reactive({ open: false, editando: null })
 const confirmDialog = reactive({ open: false, message: '', onConfirm: null })
-const form          = useForm({ name: '', role: '', initials: '', avatar_bg: '#EEEDFE', active: true })
+const form          = useForm({ name: '', email: '', password: '' })
 
 function pedirConfirmacion(message, fn) {
   confirmDialog.message   = message
@@ -247,27 +234,38 @@ function aceptarConfirmacion() {
   confirmDialog.open = false
 }
 
-function abrirModal(member = null) {
-  modal.editando  = member
-  form.name       = member?.name      ?? ''
-  form.role       = member?.role      ?? ''
-  form.initials   = member?.initials  ?? ''
-  form.avatar_bg  = member?.avatar_bg ?? '#EEEDFE'
-  form.active     = member?.active    ?? true
-  modal.open      = true
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 }
 
-function cerrarModal() { modal.open = false; form.reset() }
+function formatDate(dateStr) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('es-HN', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+function abrirModal(user = null) {
+  modal.editando = user
+  form.name      = user?.name  ?? ''
+  form.email     = user?.email ?? ''
+  form.password  = ''
+  modal.open     = true
+}
+
+function cerrarModal() { modal.open = false; form.reset(); form.clearErrors() }
 
 function guardar() {
   if (modal.editando) {
-    form.put(`/staff/${modal.editando.id}`, { onSuccess: cerrarModal })
+    form.put(`/users/${modal.editando.id}`, { onSuccess: cerrarModal })
   } else {
-    form.post('/staff', { onSuccess: cerrarModal })
+    form.post('/users', { onSuccess: cerrarModal })
   }
 }
 
-function eliminar(member) {
-  pedirConfirmacion(`¿Eliminar a "${member.name}" del staff?`, () => router.delete(`/staff/${member.id}`))
+function eliminar(user) {
+  if (user.id === currentUserId) return
+  pedirConfirmacion(
+    `¿Eliminar al usuario "${user.name}"? Esta acción no se puede deshacer.`,
+    () => router.delete(`/users/${user.id}`)
+  )
 }
 </script>

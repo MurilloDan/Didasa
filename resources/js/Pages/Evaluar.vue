@@ -5,7 +5,7 @@
     <header class="bg-didasa-black shadow py-3 px-6 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow">
-          <img src="/images/logo.png" alt="Tecnicentro DIDASA" class="h-9 w-auto" />
+          <div class="bg-white rounded-lg p-1 flex items-center justify-center shadow-sm"><img src="/images/logo.png" alt="Tecnicentro DIDASA" class="h-9 w-auto" /></div>
         </div>
         <div>
           <h1 class="text-base font-black text-white tracking-wide">TECNICENTRO DIDASA</h1>
@@ -34,27 +34,56 @@
       </div>
     </transition>
 
+    <!-- Paso 0: Seleccionar taller -->
+    <transition name="slide">
+      <div v-if="step === 'taller'" class="flex-1 flex flex-col p-6 md:p-10 max-w-5xl mx-auto w-full">
+        <div class="text-center mb-8">
+          <div class="inline-flex items-center gap-2 bg-red-50 text-didasa-red border border-red-100 rounded-full px-4 py-1 text-sm font-semibold mb-4">
+            <span class="w-5 h-5 bg-didasa-red text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+            Paso 1 de 3
+          </div>
+          <h2 class="text-2xl md:text-3xl font-black text-didasa-black">¿En qué taller te atendieron?</h2>
+          <p class="text-gray-500 mt-2">Selecciona la sucursal que visitaste hoy</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 justify-items-center">
+          <button
+            v-for="t in talleres" :key="t.id"
+            @click="seleccionarTaller(t)"
+            class="bg-white rounded-2xl shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-200 p-7 flex flex-col items-center gap-3 border-2 border-transparent hover:border-didasa-red group w-full max-w-xs"
+          >
+            <div class="w-16 h-16 rounded-full bg-didasa-red flex items-center justify-center shadow-md">
+              <span class="text-white text-2xl">🔧</span>
+            </div>
+            <div class="text-center">
+              <p class="font-bold text-gray-800 group-hover:text-didasa-red text-lg leading-tight">{{ t.name }}</p>
+              <p class="text-sm text-gray-400 mt-0.5">{{ t.city }}</p>
+            </div>
+          </button>
+        </div>
+      </div>
+    </transition>
+
     <!-- Paso 1: Seleccionar empleado -->
     <transition name="slide">
       <div v-if="step === 'empleado'" class="flex-1 flex flex-col p-6 md:p-10 max-w-5xl mx-auto w-full">
         <div class="text-center mb-8">
           <div class="inline-flex items-center gap-2 bg-red-50 text-didasa-red border border-red-100 rounded-full px-4 py-1 text-sm font-semibold mb-4">
-            <span class="w-5 h-5 bg-didasa-red text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-            Paso 1 de 2
+            <span class="w-5 h-5 bg-didasa-red text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+            Paso 2 de 3
           </div>
           <h2 class="text-2xl md:text-3xl font-black text-didasa-black">¿Quién te atendió hoy?</h2>
           <p class="text-gray-500 mt-2">Selecciona al técnico o asesor que te brindó atención</p>
         </div>
 
         <!-- Filtro por área -->
-        <div class="flex flex-wrap gap-2 justify-center mb-6" v-if="areas.length > 1">
+        <div class="flex flex-wrap gap-2 justify-center mb-6" v-if="areasDeTaller.length > 1">
           <button
             @click="areaSeleccionada = null"
             :class="['px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
               areaSeleccionada === null ? 'bg-didasa-red text-white shadow-md' : 'bg-white text-gray-600 hover:bg-red-50 border border-gray-200']"
           >Todos</button>
           <button
-            v-for="area in areas" :key="area.id"
+            v-for="area in areasDeTaller" :key="area.id"
             @click="areaSeleccionada = area.id"
             :class="['px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
               areaSeleccionada === area.id ? 'bg-didasa-red text-white shadow-md' : 'bg-white text-gray-600 hover:bg-red-50 border border-gray-200']"
@@ -103,8 +132,8 @@
           </div>
 
           <div class="inline-flex items-center gap-2 bg-red-50 text-didasa-red border border-red-100 rounded-full px-4 py-1 text-sm font-semibold mb-6">
-            <span class="w-5 h-5 bg-didasa-red text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-            Paso 2 de 2
+            <span class="w-5 h-5 bg-didasa-red text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+            Paso 3 de 3
           </div>
           <h2 class="text-2xl font-black text-didasa-black mb-2">¿Cómo fue la atención?</h2>
           <p class="text-gray-500 mb-8">Toca la carita que mejor describe tu experiencia</p>
@@ -157,10 +186,87 @@
             <span class="text-sm">Enviando...</span>
           </div>
 
+          <div class="flex flex-col items-center gap-1 mt-4">
+            <button
+              @click="step = 'empleado'"
+              class="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            >← Cambiar empleado</button>
+            <button
+              @click="step = 'taller'"
+              class="text-sm text-gray-400 hover:text-gray-600 transition-colors"
+            >← Cambiar taller</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Paso extra: Motivo de "Debe mejorar" -->
+    <transition name="slide">
+      <div v-if="step === 'motivo'" class="flex-1 flex flex-col items-center justify-center p-6">
+        <div class="bg-white rounded-3xl shadow-xl p-8 md:p-10 max-w-lg w-full text-center">
+
+          <!-- Info del empleado -->
+          <div class="flex flex-col items-center mb-6">
+            <div class="w-16 h-16 rounded-full overflow-hidden bg-didasa-red flex items-center justify-center shadow-md mb-2">
+              <img v-if="empleado.photo" :src="empleado.photo" class="w-full h-full object-cover" />
+              <span v-else class="text-white text-xl font-black">
+                {{ empleado.first_name.charAt(0) }}{{ empleado.last_name.charAt(0) }}
+              </span>
+            </div>
+            <p class="font-bold text-gray-800">{{ empleado.first_name }} {{ empleado.last_name }}</p>
+            <p class="text-sm text-gray-400">{{ empleado.position }}</p>
+          </div>
+
+          <div class="text-5xl mb-4">😞</div>
+          <h2 class="text-2xl font-black text-didasa-black mb-1">¿Qué debe mejorar?</h2>
+          <p class="text-gray-500 text-sm mb-6">Selecciona los aspectos a mejorar (puedes elegir más de uno)</p>
+
+          <!-- Opciones de motivo -->
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <button
+              v-for="m in motivosDisponibles" :key="m.label"
+              @click="toggleMotivo(m.label)"
+              :class="['flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all duration-150 text-left',
+                motivosSeleccionados.includes(m.label)
+                  ? 'border-didasa-red bg-red-50 text-didasa-red shadow-sm scale-[1.02]'
+                  : 'border-gray-200 text-gray-600 hover:border-red-300 hover:bg-red-50']">
+              <span class="text-xl flex-shrink-0">{{ m.icon }}</span>
+              <span class="leading-tight">{{ m.label }}</span>
+              <span :class="['ml-auto w-4 h-4 rounded border-2 flex-shrink-0 transition-all',
+                motivosSeleccionados.includes(m.label) ? 'bg-didasa-red border-didasa-red' : 'border-gray-300']"></span>
+            </button>
+          </div>
+
+          <!-- Campo libre cuando seleccionan "Otro" -->
+          <transition name="fade">
+            <div v-if="motivosSeleccionados.includes('Otro')" class="mb-5">
+              <textarea
+                v-model="comentarioOtro"
+                rows="3"
+                maxlength="300"
+                placeholder="Cuéntanos qué debería mejorar..."
+                class="w-full border-2 border-red-200 focus:border-didasa-red rounded-xl px-4 py-3 text-sm text-gray-700 resize-none outline-none transition-colors"
+              />
+              <p class="text-right text-xs text-gray-400 mt-1">{{ comentarioOtro.length }}/300</p>
+            </div>
+          </transition>
+
+          <!-- Botón enviar -->
           <button
-            @click="step = 'empleado'"
-            class="mt-4 text-sm text-gray-400 hover:text-gray-600 transition-colors"
-          >← Cambiar empleado</button>
+            @click="enviarConMotivo"
+            :disabled="enviando"
+            class="w-full bg-didasa-red hover:bg-didasa-redhov text-white font-bold py-3 px-6 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <svg v-if="enviando" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            {{ motivosSeleccionados.length ? 'Enviar comentario' : 'Omitir y enviar' }}
+          </button>
+
+          <button
+            @click="step = 'calificacion'; motivosSeleccionados = []"
+            class="mt-3 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+          >← Volver</button>
         </div>
       </div>
     </transition>
@@ -173,26 +279,60 @@ import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
-  areas: Array,
+  talleres: Array,
 })
 
-const step                  = ref('empleado')
-const areaSeleccionada      = ref(null)
-const empleado              = ref(null)
+const step                     = ref('taller')
+const tallerSeleccionado       = ref(null)
+const areaSeleccionada         = ref(null)
+const empleado                 = ref(null)
 const calificacionSeleccionada = ref(null)
-const enviando              = ref(false)
-const countdown             = ref(3)
+const enviando                 = ref(false)
+const countdown                = ref(3)
+const motivosSeleccionados     = ref([])
+const comentarioOtro           = ref('')
 
-// Todos los empleados aplanados
-const todosEmpleados = computed(() =>
-  props.areas.flatMap(a => (a.empleados_activos || []).map(e => ({ ...e, area_nombre: a.nombre })))
+const motivosDisponibles = [
+  { label: 'Tiempo de atención',       icon: '⏱️' },
+  { label: 'Trato al cliente',          icon: '🤝' },
+  { label: 'Calidad del trabajo',       icon: '🔧' },
+  { label: 'Explicación del servicio',  icon: '💬' },
+  { label: 'Limpieza del área',         icon: '🧹' },
+  { label: 'Otro',                      icon: '✏️' },
+]
+
+function toggleMotivo(label) {
+  const idx = motivosSeleccionados.value.indexOf(label)
+  if (idx === -1) motivosSeleccionados.value.push(label)
+  else motivosSeleccionados.value.splice(idx, 1)
+}
+
+// Empleados del taller seleccionado
+const empleadosDeTaller = computed(() =>
+  tallerSeleccionado.value?.empleados ?? []
 )
 
+// Áreas únicas del taller seleccionado
+const areasDeTaller = computed(() => {
+  const mapa = new Map()
+  empleadosDeTaller.value.forEach(e => {
+    if (e.area) mapa.set(e.area.id, e.area)
+  })
+  return [...mapa.values()]
+})
+
+// Empleados filtrados por área
 const empleadosFiltrados = computed(() =>
   areaSeleccionada.value === null
-    ? todosEmpleados.value
-    : todosEmpleados.value.filter(e => e.area_id === areaSeleccionada.value)
+    ? empleadosDeTaller.value
+    : empleadosDeTaller.value.filter(e => e.department_id === areaSeleccionada.value)
 )
+
+function seleccionarTaller(t) {
+  tallerSeleccionado.value = t
+  areaSeleccionada.value   = null
+  step.value               = 'empleado'
+}
 
 function seleccionarEmpleado(emp) {
   empleado.value = emp
@@ -200,18 +340,42 @@ function seleccionarEmpleado(emp) {
   step.value = 'calificacion'
 }
 
-async function calificar(cal) {
+function calificar(cal) {
   if (enviando.value) return
   calificacionSeleccionada.value = cal
+  if (cal === 'poor') {
+    motivosSeleccionados.value = []
+    step.value = 'motivo'
+    return
+  }
+  enviarEvaluacion(cal, null)
+}
+
+function enviarConMotivo() {
+  let partes = motivosSeleccionados.value.filter(m => m !== 'Otro')
+  if (motivosSeleccionados.value.includes('Otro') && comentarioOtro.value.trim()) {
+    partes.push('Otro: ' + comentarioOtro.value.trim())
+  } else if (motivosSeleccionados.value.includes('Otro')) {
+    partes.push('Otro')
+  }
+  const comment = partes.length ? partes.join(', ') : null
+  enviarEvaluacion('poor', comment)
+}
+
+function enviarEvaluacion(cal, comment) {
+  if (enviando.value) return
   enviando.value = true
 
   router.post('/evaluar', {
     employee_id: empleado.value.id,
     rating:      cal,
+    comment:     comment,
   }, {
     preserveState:  true,
     preserveScroll: true,
     onSuccess: () => {
+      motivosSeleccionados.value = []
+      comentarioOtro.value = ''
       step.value = 'gracias'
       iniciarContador()
     },
@@ -227,8 +391,9 @@ function iniciarContador() {
     countdown.value--
     if (countdown.value <= 0) {
       clearInterval(t)
-      step.value             = 'empleado'
-      empleado.value         = null
+      step.value                     = 'taller'
+      tallerSeleccionado.value       = null
+      empleado.value                 = null
       calificacionSeleccionada.value = null
     }
   }, 1000)

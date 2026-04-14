@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\Empleado;
+use App\Models\Taller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -12,8 +13,9 @@ class EmployeeController extends Controller
     public function index()
     {
         return Inertia::render('Employees/Index', [
-            'employees'   => Empleado::with('area')->orderBy('first_name')->get(),
+            'employees'   => Empleado::with(['area', 'workshop'])->orderBy('first_name')->get(),
             'departments' => Area::orderBy('name')->get(['id', 'name']),
+            'workshops'   => Taller::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -24,6 +26,7 @@ class EmployeeController extends Controller
             'last_name'     => 'required|string|max:100',
             'position'      => 'nullable|string|max:100',
             'department_id' => 'required|exists:departments,id',
+            'workshop_id'   => 'nullable|exists:workshops,id',
         ]);
 
         Empleado::create(array_merge($data, ['active' => true]));
@@ -38,6 +41,7 @@ class EmployeeController extends Controller
             'last_name'     => 'required|string|max:100',
             'position'      => 'nullable|string|max:100',
             'department_id' => 'required|exists:departments,id',
+            'workshop_id'   => 'nullable|exists:workshops,id',
             'active'        => 'boolean',
         ]);
 
