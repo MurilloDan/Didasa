@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Evaluacion extends Model
 {
@@ -36,6 +37,13 @@ class Evaluacion extends Model
     public function empleado(): BelongsTo
     {
         return $this->belongsTo(Empleado::class, 'employee_id');
+    }
+
+    public function improvementAspects(): BelongsToMany
+    {
+        return $this->belongsToMany(AspectoMejora::class, 'evaluation_improvement_aspect', 'evaluation_id', 'improvement_aspect_id')
+            ->withPivot('extra_comment')
+            ->withTimestamps();
     }
 
     public function getEmojiAttribute(): string

@@ -127,40 +127,10 @@ class ReporteController extends Controller
             ->orderBy('fecha')
             ->get();
 
-        // Comentarios de evaluaciones "Debe mejorar"
-        $comentariosQ = Evaluacion::whereBetween('created_at', [$inicio, $fin])
-            ->where('rating', 'poor')
-            ->whereNotNull('comment')
-            ->where('comment', '!=', '');
-        if ($empIds) $comentariosQ->whereIn('employee_id', $empIds);
-        $comentariosRaw = $comentariosQ->orderByDesc('created_at')
-            ->limit(100)
-            ->with('empleado:id,first_name,last_name,position')
-            ->get();
-
-        $comentarios = $comentariosRaw->map(fn ($e) => [
-            'empleado' => optional($e->empleado)->full_name ?? '—',
-            'cargo'    => optional($e->empleado)->position ?? '—',
-            'comment'  => $e->comment,
-            'fecha'    => $e->created_at->format('d/m/Y H:i'),
+        [$comentarios, $motivosFreq] = $this->buildFeedbackData($request, [
+            'inicio' => $inicio->toDateString(),
+            'fin' => $fin->toDateString(),
         ]);
-
-        // Frecuencia de motivos (conteo de cada aspecto mencionado)
-        $motivosFreq = [];
-        foreach ($comentariosRaw as $c) {
-            foreach (explode(', ', $c->comment ?? '') as $part) {
-                $part = trim($part);
-                if (!$part) continue;
-                $key = str_starts_with($part, 'Otro:') ? 'Otro' : $part;
-                $motivosFreq[$key] = ($motivosFreq[$key] ?? 0) + 1;
-            }
-        }
-        arsort($motivosFreq);
-        $motivosFreq = array_map(
-            fn ($label, $count) => ['label' => $label, 'count' => $count],
-            array_keys($motivosFreq),
-            $motivosFreq
-        );
 
         // Historial de cortes quincenales (todos los períodos guardados)
         $historicoQ = DB::table('biweekly_reports');
@@ -238,9 +208,7 @@ class ReporteController extends Controller
         $fin = Carbon::parse($periodo['fin'])->endOfDay();
 
         $comentariosQ = Evaluacion::whereBetween('created_at', [$inicio, $fin])
-            ->where('rating', 'poor')
-            ->whereNotNull('comment')
-            ->where('comment', '!=', '');
+            ->where('rating', 'poor');
 
         if ($workshopId) {
             $empIds = Empleado::where('workshop_id', $workshopId)->pluck('id');
@@ -252,25 +220,37 @@ class ReporteController extends Controller
 
         $comentariosRaw = $comentariosQ->orderByDesc('created_at')
             ->limit(300)
-            ->with('empleado:id,first_name,last_name,position')
+            ->with([
+                'empleado:id,first_name,last_name,position',
+                'improvementAspects:id,name,icon,is_other,sort_order',
+            ])
             ->get();
 
-        $comentarios = $comentariosRaw->map(fn ($e) => [
-            'empleado' => optional($e->empleado)->full_name ?? '—',
-            'cargo'    => optional($e->empleado)->position ?? '—',
-            'comment'  => $e->comment,
-            'fecha'    => $e->created_at->format('d/m/Y H:i'),
-        ])->values()->toArray();
+        $comentarios = $comentariosRaw
+            ->map(function ($e) {
+                $tags = $this->extractFeedbackTags($e);
+                $comment = !empty($tags) ? implode(', ', $tags) : ($e->comment ?? null);
+
+                if (!$comment) {
+                    return null;
+                }
+
+                return [
+                    'empleado' => optional($e->empleado)->full_name ?? '—',
+                    'cargo'    => optional($e->empleado)->position ?? '—',
+                    'comment'  => $comment,
+                    'tags'     => $tags,
+                    'fecha'    => $e->created_at->format('d/m/Y H:i'),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->toArray();
 
         $motivosFreq = [];
-        foreach ($comentariosRaw as $c) {
-            foreach (explode(', ', $c->comment ?? '') as $part) {
-                $part = trim($part);
-                if (!$part) {
-                    continue;
-                }
-                $key = str_starts_with($part, 'Otro:') ? 'Otro' : $part;
-                $motivosFreq[$key] = ($motivosFreq[$key] ?? 0) + 1;
+        foreach ($comentariosRaw as $evaluacion) {
+            foreach ($this->extractMotivoLabels($evaluacion) as $label) {
+                $motivosFreq[$label] = ($motivosFreq[$label] ?? 0) + 1;
             }
         }
 
@@ -282,6 +262,52 @@ class ReporteController extends Controller
         ));
 
         return [$comentarios, $motivosFreq];
+    }
+
+    private function extractFeedbackTags(Evaluacion $evaluacion): array
+    {
+        $tags = $evaluacion->improvementAspects
+            ->sortBy('sort_order')
+            ->map(function ($aspect) {
+                $extra = trim((string) ($aspect->pivot->extra_comment ?? ''));
+
+                if ($aspect->is_other) {
+                    return $extra !== '' ? 'Otro: ' . $extra : 'Otro';
+                }
+
+                return $aspect->name;
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        if (!empty($tags)) {
+            return $tags;
+        }
+
+        return array_values(array_filter(array_map(
+            'trim',
+            preg_split('/,\s*/', (string) ($evaluacion->comment ?? '')) ?: []
+        )));
+    }
+
+    private function extractMotivoLabels(Evaluacion $evaluacion): array
+    {
+        $labels = $evaluacion->improvementAspects
+            ->pluck('name')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (!empty($labels)) {
+            return $labels;
+        }
+
+        return array_values(array_unique(array_map(
+            fn ($tag) => str_starts_with($tag, 'Otro:') ? 'Otro' : $tag,
+            $this->extractFeedbackTags($evaluacion)
+        )));
     }
 
     private function buildReportData(Request $request): array

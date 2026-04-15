@@ -299,19 +299,23 @@
           <!-- Frecuencia de motivos -->
           <div v-if="motivos_freq.length">
             <h4 class="text-sm font-bold text-gray-600 uppercase tracking-wider mb-4">Aspectos más mencionados</h4>
-            <div class="space-y-2">
-              <div v-for="m in motivos_freq" :key="m.label" class="flex items-center gap-2 sm:gap-3">
-                <span class="w-28 sm:w-40 text-xs font-medium text-gray-600 text-left sm:text-right flex-shrink-0">{{ m.label }}</span>
-                <div class="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
-                  <div
-                    class="h-full bg-didasa-red rounded-full flex items-center justify-end pr-2 transition-all duration-500"
-                    :style="{ width: Math.round(m.count / motivos_freq[0].count * 100) + '%' }"
-                  >
-                    <span v-if="m.count / motivos_freq[0].count > 0.25" class="text-white text-xs font-bold">{{ m.count }}</span>
-                  </div>
-                </div>
-                <span class="w-6 text-xs font-bold text-gray-500 flex-shrink-0">{{ m.count }}</span>
-              </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                  <tr>
+                    <th class="px-4 py-3 text-left">Aspecto</th>
+                    <th class="px-4 py-3 text-center">Frecuencia</th>
+                    <th class="px-4 py-3 text-right">Porcentaje</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                  <tr v-for="m in motivos_freq" :key="m.label" class="hover:bg-red-50 transition-colors">
+                    <td class="px-4 py-3 font-medium text-gray-700">{{ m.label }}</td>
+                    <td class="px-4 py-3 text-center font-semibold text-didasa-red">{{ m.count }}</td>
+                    <td class="px-4 py-3 text-right text-gray-500">{{ porcentajeMotivo(m.count) }}%</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
@@ -336,7 +340,7 @@
                     <td class="px-4 py-3">
                       <div class="flex flex-wrap gap-1">
                         <span
-                          v-for="tag in c.comment.split(', ')" :key="tag"
+                          v-for="tag in (c.tags?.length ? c.tags : c.comment.split(', '))" :key="tag"
                           class="inline-block text-xs font-medium bg-red-50 text-didasa-red border border-red-100 rounded-full px-2.5 py-0.5"
                         >{{ tag }}</span>
                       </div>
@@ -356,7 +360,7 @@
                   <p class="text-[11px] text-gray-400 whitespace-nowrap">{{ c.fecha }}</p>
                 </div>
                 <div class="flex flex-wrap gap-1 mt-2">
-                  <span v-for="tag in c.comment.split(', ')" :key="`tag-${i}-${tag}`" class="inline-block text-[11px] font-medium bg-red-50 text-didasa-red border border-red-100 rounded-full px-2 py-0.5">{{ tag }}</span>
+                  <span v-for="tag in (c.tags?.length ? c.tags : c.comment.split(', '))" :key="`tag-${i}-${tag}`" class="inline-block text-[11px] font-medium bg-red-50 text-didasa-red border border-red-100 rounded-full px-2 py-0.5">{{ tag }}</span>
                 </div>
               </div>
             </div>
@@ -490,6 +494,10 @@ const satisfaccionGlobal = computed(() => {
   return Math.round(((props.global.good * 100) + (props.global.fair * 50)) / t)
 })
 
+const totalMotivos = computed(() => {
+  return props.motivos_freq.reduce((acc, item) => acc + (Number(item.count) || 0), 0)
+})
+
 const excelUrl = computed(() => {
   const base = '/reportes/export/excel'
   return props.taller_id ? `${base}?taller=${props.taller_id}` : base
@@ -503,6 +511,11 @@ const pdfUrl = computed(() => {
 function pct(parte, total) {
   if (!total || !parte) return 0
   return Math.round((parte / total) * 100)
+}
+
+function porcentajeMotivo(count) {
+  if (!totalMotivos.value || !count) return 0
+  return Math.round((count / totalMotivos.value) * 1000) / 10
 }
 
 function formatFecha(fecha) {

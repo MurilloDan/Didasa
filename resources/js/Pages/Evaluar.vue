@@ -224,22 +224,22 @@
           <!-- Opciones de motivo -->
           <div class="grid grid-cols-2 gap-3 mb-4">
             <button
-              v-for="m in motivosDisponibles" :key="m.label"
-              @click="toggleMotivo(m.label)"
+              v-for="m in motivosDisponibles" :key="m.id"
+              @click="toggleMotivo(m.id)"
               :class="['flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all duration-150 text-left',
-                motivosSeleccionados.includes(m.label)
+                motivosSeleccionados.includes(m.id)
                   ? 'border-didasa-red bg-red-50 text-didasa-red shadow-sm scale-[1.02]'
                   : 'border-gray-200 text-gray-600 hover:border-red-300 hover:bg-red-50']">
               <span class="text-xl flex-shrink-0">{{ m.icon }}</span>
-              <span class="leading-tight">{{ m.label }}</span>
+              <span class="leading-tight">{{ m.name }}</span>
               <span :class="['ml-auto w-4 h-4 rounded border-2 flex-shrink-0 transition-all',
-                motivosSeleccionados.includes(m.label) ? 'bg-didasa-red border-didasa-red' : 'border-gray-300']"></span>
+                motivosSeleccionados.includes(m.id) ? 'bg-didasa-red border-didasa-red' : 'border-gray-300']"></span>
             </button>
           </div>
 
           <!-- Campo libre cuando seleccionan "Otro" -->
           <transition name="fade">
-            <div v-if="motivosSeleccionados.includes('Otro')" class="mb-5">
+            <div v-if="otroSeleccionado" class="mb-5">
               <textarea
                 v-model="comentarioOtro"
                 rows="3"
@@ -264,7 +264,7 @@
           </button>
 
           <button
-            @click="step = 'calificacion'; motivosSeleccionados = []"
+            @click="step = 'calificacion'; motivosSeleccionados = []; comentarioOtro = ''"
             class="mt-3 text-sm text-gray-400 hover:text-gray-600 transition-colors"
           >← Volver</button>
         </div>
@@ -280,6 +280,7 @@ import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
   talleres: Array,
+  aspectos_mejora: { type: Array, default: () => [] },
 })
 
 const step                     = ref('taller')
@@ -292,18 +293,25 @@ const countdown                = ref(3)
 const motivosSeleccionados     = ref([])
 const comentarioOtro           = ref('')
 
-const motivosDisponibles = [
-  { label: 'Tiempo de atención',       icon: '⏱️' },
-  { label: 'Trato al cliente',          icon: '🤝' },
-  { label: 'Calidad del trabajo',       icon: '🔧' },
-  { label: 'Explicación del servicio',  icon: '💬' },
-  { label: 'Limpieza del área',         icon: '🧹' },
-  { label: 'Otro',                      icon: '✏️' },
-]
+const motivosDisponibles = computed(() => {
+  if (props.aspectos_mejora.length) return props.aspectos_mejora
 
-function toggleMotivo(label) {
-  const idx = motivosSeleccionados.value.indexOf(label)
-  if (idx === -1) motivosSeleccionados.value.push(label)
+  return [
+    { id: 1, name: 'Tiempo de atención', icon: '⏱️', is_other: false },
+    { id: 2, name: 'Trato al cliente', icon: '🤝', is_other: false },
+    { id: 3, name: 'Calidad del trabajo', icon: '🔧', is_other: false },
+    { id: 4, name: 'Explicación del servicio', icon: '💬', is_other: false },
+    { id: 5, name: 'Limpieza del área', icon: '🧹', is_other: false },
+    { id: 6, name: 'Otro', icon: '✏️', is_other: true },
+  ]
+})
+
+const otroId = computed(() => motivosDisponibles.value.find(m => m.is_other)?.id ?? null)
+const otroSeleccionado = computed(() => otroId.value !== null && motivosSeleccionados.value.includes(otroId.value))
+
+function toggleMotivo(id) {
+  const idx = motivosSeleccionados.value.indexOf(id)
+  if (idx === -1) motivosSeleccionados.value.push(id)
   else motivosSeleccionados.value.splice(idx, 1)
 }
 
@@ -345,6 +353,7 @@ function calificar(cal) {
   calificacionSeleccionada.value = cal
   if (cal === 'poor') {
     motivosSeleccionados.value = []
+    comentarioOtro.value = ''
     step.value = 'motivo'
     return
   }
@@ -352,14 +361,7 @@ function calificar(cal) {
 }
 
 function enviarConMotivo() {
-  let partes = motivosSeleccionados.value.filter(m => m !== 'Otro')
-  if (motivosSeleccionados.value.includes('Otro') && comentarioOtro.value.trim()) {
-    partes.push('Otro: ' + comentarioOtro.value.trim())
-  } else if (motivosSeleccionados.value.includes('Otro')) {
-    partes.push('Otro')
-  }
-  const comment = partes.length ? partes.join(', ') : null
-  enviarEvaluacion('poor', comment)
+  enviarEvaluacion('poor', null)
 }
 
 function enviarEvaluacion(cal, comment) {
@@ -370,6 +372,10 @@ function enviarEvaluacion(cal, comment) {
     employee_id: empleado.value.id,
     rating:      cal,
     comment:     comment,
+    aspect_ids:  cal === 'poor' ? motivosSeleccionados.value : [],
+    other_comment: cal === 'poor' && otroSeleccionado.value
+      ? (comentarioOtro.value.trim() || null)
+      : null,
   }, {
     preserveState:  true,
     preserveScroll: true,

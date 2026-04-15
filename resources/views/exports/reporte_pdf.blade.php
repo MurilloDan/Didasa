@@ -253,17 +253,31 @@
 <div class="section-title">Aspectos a Mejorar</div>
 
 @if(count($motivosFreq) > 0)
-    @foreach($motivosFreq as $m)
-        @php
-            $count = (int) ($m['count'] ?? 0);
-            $width = $maxMotivo > 0 ? round(($count / $maxMotivo) * 100, 1) : 0;
-        @endphp
-        <div class="motivo-row">
-            <span class="motivo-label">{{ $m['label'] ?? '—' }}</span>
-            <span class="motivo-track"><span class="motivo-fill" style="width: {{ $width }}%;"></span></span>
-            <span class="motivo-count">{{ $count }}</span>
-        </div>
-    @endforeach
+    @php
+        $totalMotivos = collect($motivosFreq)->sum(fn ($item) => (int) ($item['count'] ?? 0));
+    @endphp
+    <table class="comments">
+        <thead>
+            <tr>
+                <th style="width:64%;">Aspecto</th>
+                <th style="width:18%; text-align:center;">Frecuencia</th>
+                <th style="width:18%; text-align:center;">Porcentaje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($motivosFreq as $m)
+                @php
+                    $count = (int) ($m['count'] ?? 0);
+                    $pct = $totalMotivos > 0 ? round(($count / $totalMotivos) * 100, 1) : 0;
+                @endphp
+                <tr>
+                    <td>{{ $m['label'] ?? '—' }}</td>
+                    <td style="text-align:center;font-weight:bold;">{{ $count }}</td>
+                    <td style="text-align:center;">{{ $pct }}%</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 @else
     <p style="font-size:8px;color:#6b7280;">Sin aspectos registrados en este período.</p>
 @endif
